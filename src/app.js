@@ -8,13 +8,18 @@ import bidRoutes from "./routes/bid.routes.js";
 
 const app = express();
 
-app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true
-}));
-
 app.use(express.json());
 app.use(cookieParser());
+
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://69664413f78f15e44dd477a9--glowing-flan-20b600.netlify.app"
+    ],
+    credentials: true
+  })
+);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/gigs", gigRoutes);
