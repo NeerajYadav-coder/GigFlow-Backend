@@ -8,22 +8,17 @@ import bidRoutes from "./routes/bid.routes.js";
 
 const app = express();
 
-/* 🔥 FINAL CORS CONFIG */
+/* 🔥 CORS CONFIG */
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
+      if (!origin) return callback(null, true); // allow non-browser requests
 
-      if (origin.startsWith("http://localhost")) {
-        return callback(null, true);
-      }
+      // allow localhost
+      if (origin.startsWith("http://localhost")) return callback(null, true);
 
-      if (
-        origin ===
-        "https://glowing-flan-20b600.netlify.app/"
-      ) {
-        return callback(null, true);
-      }
+      // allow Netlify deploy URLs
+      if (origin.endsWith(".netlify.app")) return callback(null, true);
 
       return callback(new Error("Not allowed by CORS"));
     },
