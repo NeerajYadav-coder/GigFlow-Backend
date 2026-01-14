@@ -1,119 +1,208 @@
-GigFlow Backend
-GigFlow – A Freelance Marketplace connecting clients and freelancers seamlessly.
+GigFlow – Backend
 
-Overview
-This is the backend of GigFlow, built using Node.js, Express.js, and MongoDB.
-It handles user authentication, project management, payment workflows, and admin functionalities. The backend exposes RESTful APIs that the frontend consumes.
+GigFlow Backend is the server-side application for the GigFlow – Mini Freelance Marketplace Platform.
 
-Table of Contents
-Technologies Used
-Features
-Folder Structure
-Installation
-Environment Variables
-API Endpoints
-Testing
-Deployment
-Contributing
-License
+This backend handles authentication, authorization, database operations, and core business logic for gigs and bids.
 
-Technologies Used
-Node.js – Server-side runtime
-Express.js – Web framework for routing & middleware
-MongoDB – Database for storing users, projects, and transactions
-Mongoose – MongoDB object modeling for Node.js
-JWT – Authentication & authorization
-Bcrypt – Password hashing
-Nodemailer – Sending emails
-Axios – API requests for internal service communication
+🔗 Live Backend URL
 
-Features
-User Management – Register, login, update profile, user roles (freelancer/client/admin)
-Project Management – Create projects, submit proposals, assign tasks
-Payment Integration – Process payments between clients and freelancers
-Admin Panel APIs – Monitor users, projects, and payments
-Notifications – Email alerts for project updates, payments, etc.
-Security – JWT authentication, password hashing, input validation
+Backend (Render):
+https://gigflow-backend-p324.onrender.com
 
-Folder Structure
-backend/
-├─ config/          # DB connection and environment configs
-├─ controllers/     # Route logic
-├─ middlewares/     # Authentication & error handling
-├─ models/          # MongoDB schemas
-├─ routes/          # API routes
-├─ utils/           # Helper functions
-├─ app.js           # Express server setup
-├─ server.js        # Server listener
-├─ package.json     # Project dependencies
-└─ README.md
+🧠 Backend Responsibilities
 
-Installation
-Clone the repo:
-git clone https://github.com/NeerajYadav-coder/GigFlow-Backend.git
-cd GigFlow-Backend
+The backend is responsible for:
 
-Install dependencies:
+User authentication and authorization
+
+Secure cookie-based session handling
+
+Gig creation and retrieval
+
+Bid placement and retrieval
+
+Role-based access control
+
+Database management using MongoDB
+
+🛠 Tech Stack
+
+Node.js
+
+Express.js
+
+MongoDB
+
+Mongoose
+
+JSON Web Tokens (JWT)
+
+Cookie Parser
+
+CORS
+
+dotenv
+
+📁 Folder Structure
+src/
+├── config/
+│   ├── db.js
+│
+├── controllers/
+│   ├── auth.controller.js
+│   ├── gig.controller.js
+│   ├── bid.controller.js
+│
+├── middleware/
+│   ├── auth.middleware.js
+│
+├── models/
+│   ├── User.js
+│   ├── Gig.js
+│   ├── Bid.js
+│
+├── routes/
+│   ├── auth.routes.js
+│   ├── gig.routes.js
+│   ├── bid.routes.js
+│
+├── app.js
+│
+server.js
+
+🔐 Authentication System
+
+JWT-based authentication
+
+Tokens stored securely in HTTP-only cookies
+
+Persistent login using /api/auth/me
+
+Protected routes using custom middleware
+
+🔒 Auth Endpoints
+POST   /api/auth/register
+POST   /api/auth/login
+POST   /api/auth/logout
+GET    /api/auth/me
+
+📦 Gig Endpoints
+GET    /api/gigs
+GET    /api/gigs/:id
+POST   /api/gigs
+
+
+Gig creation is protected and requires authentication.
+
+💰 Bid Endpoints
+POST   /api/bids/:gigId
+GET    /api/bids/:gigId
+
+
+Only authenticated users can place bids.
+
+🧬 Database Models
+User Model
+
+name
+
+email
+
+password (hashed)
+
+role (client / freelancer)
+
+timestamps
+
+Gig Model
+
+title
+
+description
+
+budget
+
+createdBy (User reference)
+
+timestamps
+
+Bid Model
+
+amount
+
+message
+
+gigId (Gig reference)
+
+bidder (User reference)
+
+timestamps
+
+🌐 CORS Configuration
+
+CORS is configured to allow:
+
+Local development origins
+
+Deployed Netlify frontend
+
+Cookie-based authentication (credentials: true)
+
+Example:
+
+origin: [
+  "http://localhost:5173",
+  "https://glowing-flan-20b600.netlify.app"
+]
+
+⚙️ Setup Instructions (Local Development)
+1️⃣ Clone the Repository
+git clone <backend-repo-url>
+cd backend
+
+2️⃣ Install Dependencies
 npm install
 
-Setup environment variables (see below)
-Run the server:
+3️⃣ Environment Variables
 
-npm run dev   # For development with nodemon
-npm start     # For production
+Create a .env file in the root directory.
 
-Environment Variables
-Create a .env file in the root folder:
+Example .env.example:
+
 PORT=5000
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret
-EMAIL_USER=your_email_address
-EMAIL_PASS=your_email_password
-PAYMENT_GATEWAY_KEY=your_payment_gateway_key
-FRONTEND_URL=http://localhost:3000
+NODE_ENV=development
 
-API Endpoints
-Auth
-POST /api/auth/register – Register new user
-POST /api/auth/login – Login
-GET /api/auth/profile – Get logged-in user profile
-Users
-GET /api/users/ – Get all users (Admin)
-PATCH /api/users/:id – Update user profile
+4️⃣ Start the Server
+npm run dev
 
-Projects
-POST /api/projects/ – Create project
-GET /api/projects/ – Get all projects
-GET /api/projects/:id – Get single project
-PATCH /api/projects/:id – Update project
-DELETE /api/projects/:id – Delete project
 
-Testing
-Use Postman or Insomnia to test API routes
-Run automated tests (if added):
+The server will run at:
 
-npm test
+http://localhost:5000
 
-Deployment
-The backend is production-ready and can be deployed to:
-Render – https://render.com
-Heroku – https://heroku.com
-Vercel (Serverless) – https://vercel.com
+🚀 Deployment
 
-Steps (Render example):
-Connect GitHub repo to Render
-Set environment variables on Render dashboard
+Backend deployed on Render
 
-Deploy the service
-Update frontend axios baseURL to the deployed backend URL
+Environment variables configured securely on Render dashboard
 
-Contributing
-Fork the repository
-Create a branch (git checkout -b feature/feature-name)
-Make your changes
-Commit changes (git commit -m 'Add feature')
-Push to branch (git push origin feature/feature-name)
-Open a Pull Request
+MongoDB hosted using MongoDB Atlas
 
-License
-This project is MIT Licensed – see LICENSE for details.
+
+📌 Key Highlights
+
+Secure authentication using cookies
+
+Clean MVC architecture
+
+Proper separation of concerns
+
+Scalable folder structure
+
+Production-ready backend setup
+
+📄 License
+
+This project is developed exclusively for the ServiceHive Internship Assignment and is intended for evaluation purposes only.
