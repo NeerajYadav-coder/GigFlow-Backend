@@ -5,24 +5,57 @@ const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: true,
-      trim: true
+      required: [true, "Name is required"],
+      trim: true,
+      minlength: [2, "Name must be at least 2 characters"]
     },
     email: {
       type: String,
-      required: true,
+      required: [true, "Email is required"],
       unique: true,
-      lowercase: true
+      lowercase: true,
+      match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, "Please fill a valid email address"]
     },
     password: {
       type: String,
-      required: true,
-      minlength: 6
+      required: [true, "Password is required"],
+      minlength: [6, "Password must be at least 6 characters"]
     },
     role: {
       type: String,
       enum: ["client", "freelancer"],
       required: true
+    },
+    // Profile fields
+    bio: {
+      type: String,
+      default: "",
+      maxlength: 500
+    },
+    skills: {
+      type: [String],
+      default: []
+    },
+    avatar: {
+      type: String, // URL or initials fallback
+      default: ""
+    },
+    location: {
+      type: String,
+      default: ""
+    },
+    // Stats (denormalized for performance)
+    totalGigsPosted: {
+      type: Number,
+      default: 0
+    },
+    totalBidsPlaced: {
+      type: Number,
+      default: 0
+    },
+    totalHires: {
+      type: Number,
+      default: 0
     }
   },
   { timestamps: true }

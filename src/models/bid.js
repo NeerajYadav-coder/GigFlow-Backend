@@ -20,6 +20,10 @@ const bidSchema = new mongoose.Schema(
       type: Number,
       required: true
     },
+    deliveryDays: {
+      type: Number,
+      default: null // estimated delivery in days
+    },
     status: {
       type: String,
       enum: ["pending", "hired", "rejected"],
@@ -28,5 +32,8 @@ const bidSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+bidSchema.index({ gigId: 1, freelancerId: 1 }, { unique: true });
+bidSchema.index({ freelancerId: 1, status: 1 });
 
 export default mongoose.model("Bid", bidSchema);

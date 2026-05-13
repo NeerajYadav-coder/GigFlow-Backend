@@ -32,10 +32,12 @@ export const register = async (req, res) => {
 
     const token = generateToken(user._id);
 
+    const isProduction = process.env.NODE_ENV === "production";
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true,
-      sameSite: "none"
+      secure: true, // Always true for cross-site cookies
+      sameSite: "none", // Required for cross-site cookies (Render -> Netlify/Localhost)
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
     res.status(201).json({
@@ -48,7 +50,7 @@ export const register = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.name === "ValidationError" ? Object.values(error.errors)[0].message : error.message });
   }
 };
 
@@ -76,7 +78,8 @@ export const login = async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true,
       secure: true,
-      sameSite: "none"
+      sameSite: "none",
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
     res.json({
@@ -89,7 +92,7 @@ export const login = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.name === "ValidationError" ? Object.values(error.errors)[0].message : error.message });
   }
 };
 
