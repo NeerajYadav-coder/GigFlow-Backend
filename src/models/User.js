@@ -56,6 +56,15 @@ const userSchema = new mongoose.Schema(
     totalHires: {
       type: Number,
       default: 0
+    },
+    // Preferences for SmartMatch
+    preferredCategory: {
+      type: String,
+      default: "Other"
+    },
+    preferredMinBudget: {
+      type: Number,
+      default: 0
     }
   },
   { timestamps: true }

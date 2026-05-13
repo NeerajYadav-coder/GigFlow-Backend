@@ -6,6 +6,7 @@ import authRoutes from "./routes/auth.routes.js";
 import gigRoutes from "./routes/gig.routes.js";
 import bidRoutes from "./routes/bid.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
+import recommendationRoutes from "./routes/recommendation.routes.js";
 
 const app = express();
 
@@ -53,6 +54,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/gigs", gigRoutes);
 app.use("/api/bids", bidRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/recommendations", recommendationRoutes);
 
 /* Global Error Handler */
 app.use((err, req, res, next) => {
