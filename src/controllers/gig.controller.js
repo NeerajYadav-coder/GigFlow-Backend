@@ -2,10 +2,25 @@ import Gig from "../models/gig.js";
 import User from "../models/User.js";
 import { GIG_CATEGORIES } from "../models/gig.js";
 
-// GET ALL GIGS (with search, category filter, pagination)
+// GET ALL GIGS (with search, category filter, pagination, smart filters)
 export const getGigs = async (req, res) => {
   try {
-    const { search, category, status = "open", page = 1, limit = 12 } = req.query;
+    const { 
+      search, 
+      category, 
+      status = "open", 
+      type, 
+      locationType,
+      experienceLevel,
+      jobType,
+      location,
+      minBudget,
+      maxBudget,
+      nearMe,
+      userLocation,
+      page = 1, 
+      limit = 12 
+    } = req.query;
 
     let query = {};
 
@@ -17,11 +32,43 @@ export const getGigs = async (req, res) => {
       query.category = category;
     }
 
+    if (type && type !== "all") {
+      query.type = type;
+    }
+
+    if (locationType && locationType !== "all") {
+      query.locationType = locationType;
+    }
+
+    if (experienceLevel && experienceLevel !== "all") {
+      query.experienceLevel = experienceLevel;
+    }
+
+    if (jobType && jobType !== "all") {
+      query.jobType = jobType;
+    }
+
+    if (location && location.trim() !== "") {
+      query.location = { $regex: location, $options: "i" };
+    }
+
+    if (minBudget || maxBudget) {
+      query.budget = {};
+      if (minBudget) query.budget.$gte = Number(minBudget);
+      if (maxBudget) query.budget.$lte = Number(maxBudget);
+    }
+
+    if (nearMe === "true" && userLocation && userLocation.trim() !== "") {
+      query.location = { $regex: userLocation, $options: "i" };
+    }
+
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: "i" } },
         { description: { $regex: search, $options: "i" } },
-        { tags: { $regex: search, $options: "i" } }
+        { tags: { $regex: search, $options: "i" } },
+        { companyName: { $regex: search, $options: "i" } },
+        { location: { $regex: search, $options: "i" } }
       ];
     }
 
@@ -66,10 +113,33 @@ export const getGigById = async (req, res) => {
 // CREATE GIG (clients only)
 export const createGig = async (req, res) => {
   try {
-    const { title, description, budget, category, tags, deadline, skillsRequired } = req.body;
+    const { 
+      title, 
+      description, 
+      budget, 
+      category, 
+      tags, 
+      deadline, 
+      skillsRequired,
+      type,
+      jobType,
+      experienceLevel,
+      salaryType,
+      companyName,
+      locationType,
+      location
+    } = req.body;
 
     if (!title || !description || !budget) {
-      return res.status(400).json({ message: "Title, description and budget are required" });
+      return res.status(400).json({ message: "Title, description and budget/salary are required" });
+    }
+
+    if (req.user.role !== "client") {
+      return res.status(403).json({ message: "Access denied. Only clients can post opportunities." });
+    }
+
+    if (Number(budget) <= 0) {
+      return res.status(400).json({ message: "Budget or salary must be a positive number." });
     }
 
     const gig = await Gig.create({
@@ -80,7 +150,14 @@ export const createGig = async (req, res) => {
       tags: tags || [],
       deadline: deadline || null,
       skillsRequired: skillsRequired || [],
-      ownerId: req.user._id
+      ownerId: req.user._id,
+      type: type || "gig",
+      jobType: jobType || "Full-time",
+      experienceLevel: experienceLevel || "Entry-level",
+      salaryType: salaryType || "fixed",
+      companyName: companyName || "",
+      locationType: locationType || "Remote",
+      location: location || ""
     });
 
     // Increment stats

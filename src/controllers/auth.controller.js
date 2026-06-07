@@ -35,22 +35,24 @@ export const register = async (req, res) => {
     const isProduction = process.env.NODE_ENV === "production";
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true, // Always true for cross-site cookies
-      sameSite: "none", // Required for cross-site cookies (Render -> Netlify/Localhost)
+      secure: true,
+      sameSite: "none",
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
+    // Return the full user object so the frontend AuthContext is complete
+    const fullUser = await User.findById(user._id).select("-password");
     res.status(201).json({
       message: "User registered successfully",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
+      user: fullUser
     });
   } catch (error) {
-    res.status(500).json({ message: error.name === "ValidationError" ? Object.values(error.errors)[0].message : error.message });
+    const isValidationError = error.name === "ValidationError" || error.code === 11000;
+    const statusCode = isValidationError ? 400 : 500;
+    const message = error.code === 11000 
+      ? "Email address already registered" 
+      : (error.name === "ValidationError" ? Object.values(error.errors)[0].message : error.message);
+    res.status(statusCode).json({ message });
   }
 };
 
@@ -82,17 +84,16 @@ export const login = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
+    // Return the full user object so the frontend AuthContext is complete
+    const fullUser = await User.findById(user._id).select("-password");
     res.json({
       message: "Login successful",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
+      user: fullUser
     });
   } catch (error) {
-    res.status(500).json({ message: error.name === "ValidationError" ? Object.values(error.errors)[0].message : error.message });
+    const isValidationError = error.name === "ValidationError";
+    const statusCode = isValidationError ? 400 : 500;
+    res.status(statusCode).json({ message: isValidationError ? Object.values(error.errors)[0].message : error.message });
   }
 };
 

@@ -65,6 +65,14 @@ const userSchema = new mongoose.Schema(
     preferredMinBudget: {
       type: Number,
       default: 0
+    },
+    resume: {
+      type: String,
+      default: ""
+    },
+    resumeOriginalName: {
+      type: String,
+      default: ""
     }
   },
   { timestamps: true }

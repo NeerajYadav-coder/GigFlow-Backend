@@ -65,6 +65,38 @@ const gigSchema = new mongoose.Schema(
     bidCount: {
       type: Number,
       default: 0
+    },
+    type: {
+      type: String,
+      enum: ["gig", "job", "internship"],
+      default: "gig"
+    },
+    jobType: {
+      type: String,
+      enum: ["Full-time", "Part-time", "Internship", "Contract"],
+      default: "Full-time"
+    },
+    experienceLevel: {
+      type: String,
+      default: "Entry-level"
+    },
+    salaryType: {
+      type: String,
+      enum: ["monthly", "yearly", "fixed"],
+      default: "fixed"
+    },
+    companyName: {
+      type: String,
+      default: ""
+    },
+    locationType: {
+      type: String,
+      enum: ["On-site", "Remote", "Hybrid"],
+      default: "Remote"
+    },
+    location: {
+      type: String,
+      default: ""
     }
   },
   { timestamps: true }

@@ -18,7 +18,8 @@ const bidSchema = new mongoose.Schema(
     },
     price: {
       type: Number,
-      required: true
+      required: false,
+      default: null
     },
     deliveryDays: {
       type: Number,

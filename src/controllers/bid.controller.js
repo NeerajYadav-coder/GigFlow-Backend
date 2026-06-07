@@ -13,18 +13,36 @@ export const createBid = async (req, res) => {
   try {
     const { gigId, message, price, deliveryDays } = req.body;
 
-    if (!gigId || !message || !price) {
-      return res.status(400).json({ message: "Gig ID, message, and price are required" });
+    if (!gigId || !message) {
+      return res.status(400).json({ message: "Gig ID and message are required" });
+    }
+
+    if (req.user.role !== "freelancer") {
+      return res.status(403).json({ message: "Access denied. Only freelancers can apply/bid on opportunities." });
     }
 
     const gig = await Gig.findById(gigId);
     if (!gig || gig.status !== "open") {
-      return res.status(400).json({ message: "Gig not available for bidding" });
+      return res.status(400).json({ message: "Listing is not available for applications" });
+    }
+
+    // Require price for freelance gigs only
+    const isFreelanceGig = gig.type === "gig" || !gig.type;
+    if (isFreelanceGig) {
+      if (!price) {
+        return res.status(400).json({ message: "Bid price is required for freelance projects" });
+      }
+      if (Number(price) <= 0) {
+        return res.status(400).json({ message: "Bid price must be a positive number" });
+      }
+      if (deliveryDays !== undefined && deliveryDays !== null && Number(deliveryDays) <= 0) {
+        return res.status(400).json({ message: "Delivery days must be a positive number" });
+      }
     }
 
     // Prevent owner from bidding on own gig
     if (gig.ownerId.toString() === req.user._id.toString()) {
-      return res.status(400).json({ message: "You cannot bid on your own gig" });
+      return res.status(400).json({ message: "You cannot apply to your own listing" });
     }
 
     // Prevent duplicate bids
@@ -34,15 +52,15 @@ export const createBid = async (req, res) => {
     });
 
     if (existingBid) {
-      return res.status(400).json({ message: "You have already placed a bid on this gig" });
+      return res.status(400).json({ message: "You have already applied/bid on this listing" });
     }
 
     const bid = await Bid.create({
       gigId,
       freelancerId: req.user._id,
       message,
-      price,
-      deliveryDays: deliveryDays || null
+      price: isFreelanceGig ? price : null,
+      deliveryDays: isFreelanceGig ? (deliveryDays || null) : null
     });
 
     // Increment bid count on gig and stats on user
@@ -76,7 +94,7 @@ export const getBidsForGig = async (req, res) => {
     }
 
     const bids = await Bid.find({ gigId })
-      .populate("freelancerId", "name email avatar bio skills location totalHires")
+      .populate("freelancerId", "name email avatar bio skills location totalHires resume resumeOriginalName")
       .sort({ createdAt: -1 });
 
     res.json(bids);
@@ -133,47 +151,55 @@ export const hireBid = async (req, res) => {
     const bid = await Bid.findById(bidId).session(session);
     if (!bid) {
       await session.abortTransaction();
-      return res.status(404).json({ message: "Bid not found" });
+      return res.status(404).json({ message: "Application not found" });
     }
 
     const gig = await Gig.findById(bid.gigId).session(session);
     if (!gig) {
       await session.abortTransaction();
-      return res.status(404).json({ message: "Gig not found" });
+      return res.status(404).json({ message: "Listing not found" });
     }
 
-    // Only gig owner can hire
+    // Only owner can hire/accept
     if (gig.ownerId.toString() !== req.user._id.toString()) {
       await session.abortTransaction();
-      return res.status(403).json({ message: "Access denied — you are not the gig owner" });
+      return res.status(403).json({ message: "Access denied — you are not the listing owner" });
     }
 
-    // Prevent double hiring
-    if (gig.status === "assigned") {
-      await session.abortTransaction();
-      return res.status(400).json({ message: "A freelancer has already been hired for this gig" });
+    const isFreelanceGig = gig.type === "gig" || !gig.type;
+
+    if (isFreelanceGig) {
+      // Prevent double hiring for freelance gigs
+      if (gig.status === "assigned") {
+        await session.abortTransaction();
+        return res.status(400).json({ message: "A freelancer has already been hired for this gig" });
+      }
+
+      // 1️⃣ Assign gig
+      gig.status = "assigned";
+      gig.hiredFreelancerId = bid.freelancerId;
+      await gig.save({ session });
+
+      // 2️⃣ Hire selected bid
+      bid.status = "hired";
+      await bid.save({ session });
+
+      // 3️⃣ Reject all other bids
+      await Bid.updateMany(
+        { gigId: gig._id, _id: { $ne: bid._id } },
+        { status: "rejected" },
+        { session }
+      );
+    } else {
+      // Job or Internship! Multiple people can be hired, listing remains open.
+      bid.status = "hired";
+      await bid.save({ session });
     }
-
-    // 1️⃣ Assign gig
-    gig.status = "assigned";
-    gig.hiredFreelancerId = bid.freelancerId;
-    await gig.save({ session });
-
-    // 2️⃣ Hire selected bid
-    bid.status = "hired";
-    await bid.save({ session });
-
-    // 3️⃣ Reject all other bids
-    await Bid.updateMany(
-      { gigId: gig._id, _id: { $ne: bid._id } },
-      { status: "rejected" },
-      { session }
-    );
 
     await session.commitTransaction();
     session.endSession();
 
-    res.json({ message: "Freelancer hired successfully!", bid, gig });
+    res.json({ message: isFreelanceGig ? "Freelancer hired successfully!" : "Candidate accepted successfully!", bid, gig });
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
