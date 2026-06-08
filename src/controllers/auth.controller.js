@@ -1,6 +1,5 @@
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
-import { OAuth2Client } from "google-auth-library";
 
 
 /* ────────────────────────────────────────────────────────
@@ -142,104 +141,7 @@ export const login = async (req, res) => {
   }
 };
 
-/* ────────────────────────────────────────────────────────
-   GOOGLE AUTH — verify Google ID token, find/create user
-   ──────────────────────────────────────────────────────── */
-export const googleAuth = async (req, res) => {
-  try {
-    const { credential, role } = req.body;
 
-    if (!credential) {
-      return res.status(400).json({ message: "Google credential is required" });
-    }
-
-    // ── Verify token with Google ──
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    if (!clientId) {
-      return res.status(500).json({ message: "Google authentication is not configured" });
-    }
-
-    const client = new OAuth2Client(clientId);
-    let ticket;
-    try {
-      ticket = await client.verifyIdToken({
-        idToken: credential,
-        audience: clientId
-      });
-    } catch (verifyErr) {
-      console.error("Google token verification failed:", verifyErr.message);
-      return res.status(401).json({ message: "Invalid Google credential. Please try again." });
-    }
-
-    const payload = ticket.getPayload();
-    const { sub: googleId, email, name, picture, email_verified } = payload;
-
-    if (!email_verified) {
-      return res.status(400).json({ message: "Google email is not verified" });
-    }
-
-    // ── Find or create user ──
-    let user = await User.findOne({
-      $or: [{ googleId }, { email: email.toLowerCase() }]
-    });
-
-    if (user) {
-      // User exists — link Google if not already linked
-      if (!user.googleId) {
-        user.googleId = googleId;
-        user.authProvider = user.authProvider === "local" ? "local" : "google";
-      }
-      // Ensure verified for Google users
-      if (!user.isVerified) {
-        user.isVerified = true;
-      }
-      // Update avatar if empty
-      if (!user.avatar && picture) {
-        user.avatar = picture;
-      }
-      await user.save();
-    } else {
-      // New user — role is required for first-time Google signup
-      if (!role) {
-        return res.status(200).json({
-          needsRole: true,
-          tempUser: { name, email, picture }
-        });
-      }
-
-      const userRole = role;
-      if (!["client", "freelancer"].includes(userRole)) {
-        return res.status(400).json({ message: "Invalid role" });
-      }
-
-      user = await User.create({
-        name,
-        email: email.toLowerCase(),
-        googleId,
-        authProvider: "google",
-        role: userRole,
-        avatar: picture || "",
-        isVerified: true // Google-verified emails need no OTP
-      });
-    }
-
-    // ── Issue JWT ──
-    const token = generateToken(user._id);
-    setTokenCookie(res, token);
-
-    const fullUser = await User.findById(user._id).select("-password");
-    res.status(200).json({
-      message: user.createdAt.getTime() === user.updatedAt.getTime()
-        ? "Account created successfully"
-        : "Login successful",
-      user: sanitizeUser(fullUser),
-      isNewUser: user.createdAt.getTime() === user.updatedAt.getTime()
-    });
-  } catch (error) {
-    console.error("Google auth error:", error);
-    res.status(500).json({ message: "Google authentication failed. Please try again." });
-  }
-};
 
 /* ────────────────────────────────────────────────────────
    LOGOUT

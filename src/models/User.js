@@ -33,11 +33,6 @@ const userSchema = new mongoose.Schema(
       enum: ["local", "google"],
       default: "local"
     },
-    googleId: {
-      type: String,
-      default: null,
-      sparse: true
-    },
 
     // ── Email Verification ──────────────────────────────
     isVerified: {
