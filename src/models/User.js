@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
+      // Not required for Google OAuth users
       minlength: [6, "Password must be at least 6 characters"]
     },
     role: {
@@ -26,7 +26,26 @@ const userSchema = new mongoose.Schema(
       enum: ["client", "freelancer"],
       required: true
     },
-    // Profile fields
+
+    // ── Auth Provider ───────────────────────────────────
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local"
+    },
+    googleId: {
+      type: String,
+      default: null,
+      sparse: true
+    },
+
+    // ── Email Verification ──────────────────────────────
+    isVerified: {
+      type: Boolean,
+      default: true
+    },
+
+    // ── Profile fields ──────────────────────────────────
     bio: {
       type: String,
       default: "",
@@ -78,14 +97,21 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+userSchema.pre("validate", function () {
+  if (this.authProvider === "local" && !this.password) {
+    this.invalidate("password", "Password is required");
+  }
+});
+
 // hash password
 userSchema.pre("save", async function () {
-  if (!this.isModified("password")) return;
+  if (!this.isModified("password") || !this.password) return;
   this.password = await bcrypt.hash(this.password, 10);
 });
 
 // compare password
 userSchema.methods.comparePassword = function (enteredPassword) {
+  if (!this.password) return false;
   return bcrypt.compare(enteredPassword, this.password);
 };
 
